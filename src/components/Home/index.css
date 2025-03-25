@@ -1,0 +1,57 @@
+.home-container {
+  padding: 20px;
+  text-align: center;
+}
+
+.menu-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  padding: 0;
+}
+
+.menu-item {
+  list-style: none;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  padding: 15px;
+  width: 200px;
+  text-align: center;
+}
+
+.food-image {
+  width: 100%;
+  height: 150px;
+  border-radius: 8px;
+}
+
+.menu-item button {
+  background-color: #0c6c2e;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+.category_slider {
+  display: flex;
+  flex-direction: row;
+  list-style-type: none;
+  justify-content: space-around;
+}
+.tab-item-button {
+  background-color: #ff6600;
+  color: white;
+  font-size: 16px;
+  border: #ffffff;
+}
+.add-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  margin: 10px;
+}

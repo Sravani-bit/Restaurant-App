@@ -26,6 +26,5 @@ body {
 
 .cart_items {
   display: flex;
-  flex-direction:  row;
-  
+  flex-direction: row;
 }

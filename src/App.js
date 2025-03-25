@@ -1,142 +1,90 @@
-import {Component} from 'react'
+import React from 'react'
+import {BrowserRouter as Router, Route, Switch} from 'react-router-dom'
+import Home from './components/Home'
+import Cart from './components/Cart'
+import Login from './components/Login'
+import ProtectedRoute from './components/ProtectedRoute'
+import CartContext from './context/CartContext'
 import './App.css'
 
-class App extends Component {
+class App extends React.Component {
   state = {
-    itemsList: [],
-    cartItems: {},
-    selectedCategory: 'Salads and Soup',
-    restaurantName: '',
+    cartList: [],
   }
 
-  componentDidMount() {
-    this.getitemsData()
-  }
+  addCartItem = item => {
+    this.setState(prevState => {
+      const existingItem = prevState.cartList.find(
+        cartItem => cartItem.id === item.id,
+      )
 
-  getitemsData = async () => {
-    const response = await fetch(
-      'https://apis2.ccbp.in/restaurant-app/restaurant-menu-list-details',
-    )
-    const data = await response.json()
-    const restaurantData = data[0]
-    const initialCartItems = {}
-    restaurantData.table_menu_list.forEach(category => {
-      category.category_dishes.forEach(dish => {
-        initialCartItems[dish.dish_id] = 0
-      })
-    })
+      if (existingItem) {
+        return {
+          cartList: prevState.cartList.map(cartItem =>
+            cartItem.id === item.id
+              ? {...cartItem, quantity: cartItem.quantity + 1}
+              : cartItem,
+          ),
+        }
+      }
 
-    this.setState({
-      itemsList: restaurantData.table_menu_list,
-      restaurantName: restaurantData.restaurant_name,
-      cartItems: initialCartItems,
+      return {
+        cartList: [...prevState.cartList, {...item, quantity: 1}],
+      }
     })
   }
 
-  setSelectedCategory = category => {
-    this.setState({selectedCategory: category})
-  }
-
-  addToCart = dishId => {
+  removeCartItem = id => {
     this.setState(prevState => ({
-      cartItems: {
-        ...prevState.cartItems,
-        [dishId]: prevState.cartItems[dishId] + 1,
-      },
+      cartList: prevState.cartList.filter(item => item.id !== id),
     }))
   }
 
-  removeFromCart = dishId => {
+  incrementCartItemQuantity = id => {
+    console.log(id)
     this.setState(prevState => ({
-      cartItems: {
-        ...prevState.cartItems,
-        [dishId]: Math.max(prevState.cartItems[dishId] - 1, 0),
-      },
+      cartList: prevState.cartList.map(item =>
+        item.id === id ? {...item, quantity: item.quantity + 1} : item,
+      ),
     }))
+  }
+
+  decrementCartItemQuantity = id => {
+    this.setState(prevState => ({
+      cartList: prevState.cartList
+        .map(item =>
+          item.id === id ? {...item, quantity: item.quantity - 1} : item,
+        )
+        .filter(item => item.quantity > 0),
+    }))
+  }
+
+  removeAllCartItems = () => {
+    this.setState({cartList: []})
   }
 
   render() {
-    const {itemsList, cartItems, selectedCategory, restaurantName} = this.state
-
-    const items = itemsList.length ? itemsList : []
-
-    const selectedCategoryList = items.find(
-      each => each.menu_category === selectedCategory,
-    ) || {
-      category_dishes: [],
-    }
-
+    const {cartList} = this.state
+    console.log(cartList)
     return (
-      <div className="bg-container">
-        <div className="header-container">
-          <h1 className="restaurant_name">{restaurantName}</h1>
-
-          <div className="cart_items">
-            <p>My Orders</p>
-            <p>
-              {Object.values(cartItems).filter(quantity => quantity > 0).length}
-            </p>
-          </div>
-        </div>
-
-        {items.length > 0 && (
-          <ul className="category_slider">
-            {items.map(each => (
-              <li key={each.menu_category}>
-                <button
-                  onClick={() => this.setSelectedCategory(each.menu_category)}
-                >
-                  {each.menu_category}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {selectedCategoryList.category_dishes.map(each => (
-          <div className="item_container" key={each.dish_id}>
-            <div
-              className={`veg-nonveg-indicator ${
-                each.dish_Type === 2 ? 'non-veg' : 'veg'
-              }`}
-            >
-              .
-            </div>
-            <div className="dish_text">
-              <h1 className="dish_name">{each.dish_name}</h1>
-              <p className="dish_price">{`${each.dish_currency} ${each.dish_price}`}</p>
-              <p className="dish_description">{each.dish_description}</p>
-
-              {each.dish_Availability ? (
-                <div>
-                  <div className="add-container">
-                    <button
-                      className="increase_decrease"
-                      onClick={() => this.removeFromCart(each.dish_id)}
-                    >
-                      -
-                    </button>
-                    <p className="dish_quantity">{cartItems[each.dish_id]}</p>
-                    <button
-                      className="increase_decrease"
-                      onClick={() => this.addToCart(each.dish_id)}
-                    >
-                      +
-                    </button>
-                  </div>
-                  {each.addonCat.length > 0 && (
-                    <p className="customization">Customizations available</p>
-                  )}
-                </div>
-              ) : (
-                <p>Not Available</p>
-              )}
-            </div>
-            <p className="dish_calories">{`${each.dish_calories} calories`}</p>
-            <img src={each.dish_image} alt={each.dish_name} />
-          </div>
-        ))}
-      </div>
+      <CartContext.Provider
+        value={{
+          cartList,
+          addCartItem: this.addCartItem,
+          removeCartItem: this.removeCartItem,
+          incrementCartItemQuantity: this.incrementCartItemQuantity,
+          decrementCartItemQuantity: this.decrementCartItemQuantity,
+          removeAllCartItems: this.removeAllCartItems,
+        }}
+      >
+        <Router>
+          <Switch>
+            <Route exact path="/login" component={Login} />
+            <ProtectedRoute exact path="/" component={Home} />
+            <ProtectedRoute exact path="/cart" component={Cart} />
+          </Switch>
+        </Router>
+      </CartContext.Provider>
     )
   }
 }
