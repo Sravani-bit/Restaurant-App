@@ -1,64 +1,65 @@
 import {Component} from 'react'
 import CartContext from '../../context/CartContext'
 import Header from '../Header'
+import CartItem from '../CartItem'
 import './index.css'
 
 class Cart extends Component {
+  renderEmptyCartView = () => (
+    <div className="empty-cart-container">
+      <img
+        src="https://assets.ccbp.in/frontend/react-js/nxt-trendz-empty-cart-img.png"
+        alt="empty cart"
+        className="empty-cart-image"
+      />
+      <h1>Your Cart Is Empty</h1>
+    </div>
+  )
+
   render() {
     return (
       <CartContext.Consumer>
         {value => {
-          const {cartList, removeCartItem, removeAllCartItems} = value
+          const {cartList, removeAllCartItems} = value
+          const showEmptyView = cartList.length === 0
+
+          const getTotalAmount = () =>
+            cartList.reduce(
+              (acc, each) => acc + each.dish_price * each.quantity,
+              0,
+            )
 
           return (
-            <div>
+            <div className="cart-container">
               <Header />
-              <h1>Cart</h1>
-              {cartList.length === 0 ? (
-                <div className="empty-cart-container">
-                  <img
-                    src="https://assets.ccbp.in/frontend/react-js/nxt-trendz-empty-cart-img.png"
-                    alt="empty cart"
-                  />
-                  <p>Your cart is empty</p>
-                </div>
-              ) : (
-                <div>
-                  <button type="button" onClick={removeAllCartItems}>
-                    Remove All
-                  </button>
-                  <ul>
-                    {cartList.map(dish => (
-                      <li key={dish.id} className="cart-item">
-                        <img
-                          src={dish.imageUrl}
-                          alt={dish.name}
-                          className="cart-item-image"
-                        />
-                        <div className="cart-item-details">
-                          <p className="cart-item-name">{dish.name}</p>
-                          <p className="cart-item-quantity">
-                            Quantity: {dish.quantity}
-                          </p>
-                          <button
-                            onClick={() => removeCartItem(dish.id)}
-                            className="remove-item-button"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                  <button
-                    type="button"
-                    onClick={removeAllCartItems}
-                    className="remove-all-button"
-                  >
-                    Remove All
-                  </button>
-                </div>
-              )}
+              <div className="cart-content">
+                {showEmptyView ? (
+                  this.renderEmptyCartView()
+                ) : (
+                  <>
+                    <div className="cart-header">
+                      <h1 className="cart-heading">My Cart</h1>
+                      <button
+                        type="button"
+                        className="remove-all-button"
+                        onClick={removeAllCartItems}
+                      >
+                        Remove All
+                      </button>
+                    </div>
+                    <ul className="cart-items-list">
+                      {cartList.map(each => (
+                        <CartItem key={each.dish_id} itemDetails={each} />
+                      ))}
+                    </ul>
+                    <div className="total-amount-container">
+                      <h1 className="total-amount">
+                        Total Amount: ₹{getTotalAmount()}
+                      </h1>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           )
         }}

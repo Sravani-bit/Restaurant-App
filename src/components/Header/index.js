@@ -1,39 +1,49 @@
-import {Link, withRouter} from 'react-router-dom'
-import {IoCartOutline} from 'react-icons/io5'
+// Header.js
+import {withRouter, Link} from 'react-router-dom'
 import Cookies from 'js-cookie'
-import CartContext from '../../context/CartContext'
+import {FaCartArrowDown} from 'react-icons/fa'
 import './index.css'
+import CartContext from '../../context/CartContext'
 
 const Header = props => {
-  const {history} = props
+  const {history, restaurantName} = props
 
-  const onLogout = () => {
+  const onClickLogout = () => {
     Cookies.remove('jwt_token')
     history.replace('/login')
   }
 
   return (
     <CartContext.Consumer>
-      {({cartList}) => {
-        const cartCount = cartList.reduce((acc, item) => acc + item.quantity, 0)
+      {value => {
+        const {cartList} = value
+        const uniqueItemsCount = cartList.length
 
         return (
-          <nav className="header">
-            <h1 className="logo" onClick={() => history.push('/')}>
-              UNI Resto Cafe
-            </h1>
-            <div>
-              <Link to="/">Home</Link>
-              <Link to="/cart">
-                <button>
-                  <IoCartOutline size={24} />
-                </button>
-                {cartCount > 0 && (
-                  <span className="cart-count">{cartCount}</span>
-                )}
+          <nav className="header-container">
+            <div className="header-content">
+              <Link to="/" className="restaurant-name">
+                {restaurantName}
               </Link>
-
-              <button onClick={onLogout}>Logout</button>
+              <div className="header-buttons">
+                <Link to="/cart" className="nav-link">
+                  <button type="button">
+                    <FaCartArrowDown size={25} />
+                  </button>
+                  {uniqueItemsCount > 0 && (
+                    <span className="cart-count-badge" data-testid="cart">
+                      {uniqueItemsCount}
+                    </span>
+                  )}
+                </Link>
+                <button
+                  type="button"
+                  className="logout-button"
+                  onClick={onClickLogout}
+                >
+                  Logout
+                </button>
+              </div>
             </div>
           </nav>
         )

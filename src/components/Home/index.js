@@ -1,16 +1,23 @@
 import {Component} from 'react'
-import 'react-loader-spinner/dist/loader/css/react-spinner-loader.css'
-import Loader from 'react-loader-spinner'
-import CartContext from '../../context/CartContext'
 import Header from '../Header'
 import './index.css'
+import CartContext from '../../context/CartContext'
+
+const API_URL =
+  'https://apis2.ccbp.in/restaurant-app/restaurant-menu-list-details'
+const API_STATUS = {
+  SUCCESS: 'SUCCESS',
+  LOADING: 'LOADING',
+  FAILURE: 'FAILURE',
+  INITIAL: 'INITIAL',
+}
 
 class Home extends Component {
   state = {
     itemsList: [],
     selectedCategory: 'Salads and Soup',
     restaurantName: '',
-    isLoading: true,
+    apiStatus: API_STATUS.INITIAL,
   }
 
   componentDidMount() {
@@ -18,22 +25,23 @@ class Home extends Component {
   }
 
   getItemsData = async () => {
+    this.setState({apiStatus: API_STATUS.LOADING})
     try {
-      const response = await fetch(
-        'https://apis2.ccbp.in/restaurant-app/restaurant-menu-list-details',
-      )
-      const data = await response.json()
+      const response = await fetch(API_URL)
 
-      if (data.length > 0) {
+      if (response.ok) {
+        const data = await response.json()
         const restaurantData = data[0]
         this.setState({
           itemsList: restaurantData.table_menu_list,
           restaurantName: restaurantData.restaurant_name,
-          isLoading: false,
+          apiStatus: API_STATUS.SUCCESS,
         })
+      } else {
+        this.setState({apiStatus: API_STATUS.FAILURE})
       }
     } catch (error) {
-      console.error(error)
+      this.setState({apiStatus: API_STATUS.FAILURE})
     }
   }
 
@@ -41,10 +49,40 @@ class Home extends Component {
     this.setState({selectedCategory: category})
   }
 
-  render() {
-    const {itemsList, selectedCategory, restaurantName, is} = this.state
+  renderFailureView = () => (
+    <div className="failure-view">
+      <img
+        src="https://assets.ccbp.in/frontend/react-js/nxt-trendz-error-view-img.png"
+        alt="failure view"
+        className="failure-img"
+      />
+      <h1 className="failure-heading">Oops! Something Went Wrong</h1>
+      <p className="failure-text">
+        We cannot seem to find the page you are looking for.
+      </p>
+      <button
+        type="button"
+        className="failure-button"
+        onClick={this.getItemsData}
+      >
+        Retry
+      </button>
+    </div>
+  )
 
-    const selectedCategoryList = itemsList.find(
+  renderLoadingView = () => (
+    <div className="loader-container" data-testid="loader">
+      <div className="loader">
+        <p>...</p>
+      </div>
+    </div>
+  )
+
+  renderSuccessView = () => {
+    const {itemsList, selectedCategory, restaurantName} = this.state
+    const items = itemsList.length ? itemsList : []
+
+    const selectedCategoryList = items.find(
       each => each.menu_category === selectedCategory,
     ) || {
       category_dishes: [],
@@ -58,41 +96,61 @@ class Home extends Component {
             addCartItem,
             incrementCartItemQuantity,
             decrementCartItemQuantity,
-            removeAllCartItems,
           } = value
 
-          const cartCount = cartList.length
+          const onClickAddToCart = dish => {
+            addCartItem({
+              dish_id: dish.dish_id,
+              dish_name: dish.dish_name,
+              dish_price: dish.dish_price,
+              dish_currency: dish.dish_currency,
+              dish_image: dish.dish_image,
+              quantity: 1,
+            })
+          }
+
+          const onIncrement = id => {
+            incrementCartItemQuantity(id)
+          }
+
+          const onDecrement = id => {
+            decrementCartItemQuantity(id)
+          }
 
           return (
-            <div className="bg-container">
-              <Header />
+            <div className="home-container">
+              <Header restaurantName={restaurantName} />
+              <div className="home-content">
+                <h1 className="restaurant-heading">{restaurantName}</h1>
 
-              {itemsList.length > 0 && (
-                <ul className="category_slider">
-                  {itemsList.map(each => (
+                <ul className="category-slider">
+                  {items.map(each => (
                     <li key={each.menu_category}>
                       <button
-                        className="menu-item button tab-item-button"
+                        type="button"
                         onClick={() =>
                           this.setSelectedCategory(each.menu_category)
                         }
+                        className={`category-button ${
+                          selectedCategory === each.menu_category
+                            ? 'active'
+                            : ''
+                        }`}
                       >
                         {each.menu_category}
                       </button>
                     </li>
                   ))}
                 </ul>
-              )}
 
-              <ul className="menu-list">
                 {selectedCategoryList.category_dishes.map(each => {
-                  const cartItem = cartList.find(
-                    item => item.id === each.dish_id,
+                  const cartDish = cartList.find(
+                    item => item.dish_id === each.dish_id,
                   )
-                  const quantity = cartItem ? cartItem.quantity : 0
+                  const quantity = cartDish ? cartDish.quantity : 0
 
                   return (
-                    <li className="menu-item" key={each.dish_id}>
+                    <div className="item-container" key={each.dish_id}>
                       <div
                         className={`veg-nonveg-indicator ${
                           each.dish_Type === 2 ? 'non-veg' : 'veg'
@@ -100,65 +158,83 @@ class Home extends Component {
                       >
                         .
                       </div>
-                      <img
-                        src={each.dish_image}
-                        alt={each.dish_name}
-                        className="food-image"
-                      />
-                      <div className="dish_text">
-                        <h2 className="dish_name">{each.dish_name}</h2>
-                        <p className="dish_price">{`${each.dish_currency} ${each.dish_price}`}</p>
-                        <p className="dish_description">
+                      <div className="dish-text">
+                        <h1 className="dish-name">{each.dish_name}</h1>
+                        <p className="dish-price">{`${each.dish_currency} ${each.dish_price}`}</p>
+                        <p className="dish-description">
                           {each.dish_description}
                         </p>
 
                         {each.dish_Availability ? (
                           <div>
-                            <div className="add-container">
+                            {quantity === 0 ? (
                               <button
                                 type="button"
-                                onClick={() =>
-                                  decrementCartItemQuantity(each.dish_id)
-                                }
-                                disabled={quantity === 0}
+                                className="add-to-cart-button"
+                                onClick={() => onClickAddToCart(each)}
                               >
-                                -
+                                ADD TO CART
                               </button>
-                              <p>{quantity}</p>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (quantity > 0) {
-                                    incrementCartItemQuantity(each.dish_id)
-                                  } else {
-                                    addCartItem({
-                                      id: each.dish_id,
-                                      name: each.dish_name,
-                                      price: each.dish_price,
-                                      imageUrl: each.dish_image,
-                                      quantity: 1,
-                                    })
-                                  }
-                                }}
-                              >
-                                +
-                              </button>
-                            </div>
+                            ) : (
+                              <div className="quantity-container">
+                                <button
+                                  type="button"
+                                  className="quantity-button"
+                                  onClick={() => onDecrement(each.dish_id)}
+                                >
+                                  -
+                                </button>
+                                <p className="quantity-count">{quantity}</p>
+                                <button
+                                  type="button"
+                                  className="quantity-button"
+                                  onClick={() => onIncrement(each.dish_id)}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            )}
+
+                            {each.addonCat.length > 0 && (
+                              <p className="customization">
+                                Customizations available
+                              </p>
+                            )}
                           </div>
                         ) : (
-                          <p>Not Available</p>
+                          <p className="not-available">Not Available</p>
                         )}
                       </div>
-                      <p className="dish_calories">{`${each.dish_calories} calories`}</p>
-                    </li>
+                      <p className="dish-calories">{`${each.dish_calories} calories`}</p>
+                      <img
+                        src={each.dish_image}
+                        alt={each.dish_name}
+                        className="dish-image"
+                      />
+                    </div>
                   )
                 })}
-              </ul>
+              </div>
             </div>
           )
         }}
       </CartContext.Consumer>
     )
+  }
+
+  render() {
+    const {apiStatus} = this.state
+
+    switch (apiStatus) {
+      case API_STATUS.LOADING:
+        return this.renderLoadingView()
+      case API_STATUS.SUCCESS:
+        return this.renderSuccessView()
+      case API_STATUS.FAILURE:
+        return this.renderFailureView()
+      default:
+        return null
+    }
   }
 }
 

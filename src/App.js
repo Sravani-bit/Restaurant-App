@@ -1,50 +1,49 @@
-import React from 'react'
-import {BrowserRouter as Router, Route, Switch} from 'react-router-dom'
+// App.js
+import {Component} from 'react'
+import {BrowserRouter, Route, Switch, Redirect} from 'react-router-dom'
+
+import Login from './components/Login'
 import Home from './components/Home'
 import Cart from './components/Cart'
-import Login from './components/Login'
 import ProtectedRoute from './components/ProtectedRoute'
 import CartContext from './context/CartContext'
 import './App.css'
 
-class App extends React.Component {
+class App extends Component {
   state = {
     cartList: [],
   }
 
-  addCartItem = item => {
+  addCartItem = dish => {
     this.setState(prevState => {
       const existingItem = prevState.cartList.find(
-        cartItem => cartItem.id === item.id,
+        item => item.dish_id === dish.dish_id,
       )
-
       if (existingItem) {
         return {
-          cartList: prevState.cartList.map(cartItem =>
-            cartItem.id === item.id
-              ? {...cartItem, quantity: cartItem.quantity + 1}
-              : cartItem,
+          cartList: prevState.cartList.map(item =>
+            item.dish_id === dish.dish_id
+              ? {...item, quantity: item.quantity + 1}
+              : item,
           ),
         }
       }
-
       return {
-        cartList: [...prevState.cartList, {...item, quantity: 1}],
+        cartList: [...prevState.cartList, {...dish, quantity: 1}],
       }
     })
   }
 
   removeCartItem = id => {
     this.setState(prevState => ({
-      cartList: prevState.cartList.filter(item => item.id !== id),
+      cartList: prevState.cartList.filter(item => item.dish_id !== id),
     }))
   }
 
   incrementCartItemQuantity = id => {
-    console.log(id)
     this.setState(prevState => ({
       cartList: prevState.cartList.map(item =>
-        item.id === id ? {...item, quantity: item.quantity + 1} : item,
+        item.dish_id === id ? {...item, quantity: item.quantity + 1} : item,
       ),
     }))
   }
@@ -53,7 +52,7 @@ class App extends React.Component {
     this.setState(prevState => ({
       cartList: prevState.cartList
         .map(item =>
-          item.id === id ? {...item, quantity: item.quantity - 1} : item,
+          item.dish_id === id ? {...item, quantity: item.quantity - 1} : item,
         )
         .filter(item => item.quantity > 0),
     }))
@@ -65,7 +64,6 @@ class App extends React.Component {
 
   render() {
     const {cartList} = this.state
-    console.log(cartList)
     return (
       <CartContext.Provider
         value={{
@@ -77,13 +75,14 @@ class App extends React.Component {
           removeAllCartItems: this.removeAllCartItems,
         }}
       >
-        <Router>
+        <BrowserRouter>
           <Switch>
             <Route exact path="/login" component={Login} />
             <ProtectedRoute exact path="/" component={Home} />
             <ProtectedRoute exact path="/cart" component={Cart} />
+            <Redirect to="/" />
           </Switch>
-        </Router>
+        </BrowserRouter>
       </CartContext.Provider>
     )
   }
